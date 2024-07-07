@@ -1,0 +1,76 @@
+version: '3.8'
+networks:
+  inter_net:
+    name: onlineStore
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
+
+services:
+  db:
+    build:
+      context: .
+      dockerfile: mysql.dockerfile
+    image: mysql:v1.0
+    ports:
+      - "33061:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: always
+    networks:
+      inter_net:
+        ipv4_address: 172.20.0.3
+
+  redis:
+    image: redis:latest
+    restart: always
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      inter_net:
+        ipv4_address: 172.20.0.4
+
+  app:
+    build:
+      context: .
+      dockerfile: app.dockerfile
+    image: app:v1.0
+    container_name: app
+    tty: true
+    stdin_open: true
+    networks:
+      inter_net:
+        ipv4_address: 172.20.0.5
+    depends_on:
+      db:
+       condition: service_healthy
+      redis:
+       condition: service_healthy
+
+  hound:
+    build:
+      context: .
+      dockerfile: hound.dockerfile
+    image: hound:v1.0
+    container_name: hound
+    tty: true
+    stdin_open: true
+    restart: always
+    networks:
+      inter_net:
+        ipv4_address: 172.20.0.2
+    depends_on:
+      db:
+       condition: service_healthy
+      redis:
+       condition: service_healthy

@@ -24,6 +24,9 @@ services:
     networks:
       inter_net:
         ipv4_address: 172.20.0.3
+    volumes:
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
 
   redis:
     image: redis:latest
@@ -38,6 +41,9 @@ services:
     networks:
       inter_net:
         ipv4_address: 172.20.0.4
+    volumes:
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
 
   app:
     build:
@@ -47,6 +53,9 @@ services:
     container_name: app
     tty: true
     stdin_open: true
+    volumes:
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
     networks:
       inter_net:
         ipv4_address: 172.20.0.5
@@ -65,9 +74,34 @@ services:
     tty: true
     stdin_open: true
     restart: always
+    volumes:
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
     networks:
       inter_net:
         ipv4_address: 172.20.0.2
+    depends_on:
+      db:
+       condition: service_healthy
+      redis:
+       condition: service_healthy
+
+  apiserver:
+    build:
+      context: .
+      dockerfile: api.dockerfile
+    image: apiserver:v1.0
+    container_name: api
+    tty: true
+    stdin_open: true
+    ports:
+      - "8080:8080"
+    volumes:
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
+    networks:
+      inter_net:
+        ipv4_address: 172.20.0.6
     depends_on:
       db:
        condition: service_healthy
